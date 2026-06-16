@@ -1,6 +1,17 @@
 import streamlit as st
+from PIL import Image
+import numpy as np
 
 st.set_page_config(page_title="AI Mammogram Analysis", page_icon="🎗️", layout="centered")
+
+# ===== دالة إزالة الخلفية البيضاء من الصورة =====
+def remove_white_background(image_path, threshold=240):
+    img = Image.open(image_path).convert("RGBA")
+    data = np.array(img)
+    r, g, b, a = data[:,:,0], data[:,:,1], data[:,:,2], data[:,:,3]
+    white_mask = (r > threshold) & (g > threshold) & (b > threshold)
+    data[:,:,3] = np.where(white_mask, 0, a)
+    return Image.fromarray(data)
 
 st.markdown("""
 <style>
@@ -47,24 +58,6 @@ div.stButton > button:hover {
     background-color: #AD1457 !important;
     color: #FFFFFF !important;
 }
-
-/* إزالة الخلفية من الصورة بشكل كامل */
-.transparent-img img {
-    mix-blend-mode: multiply;
-    background-color: transparent !important;
-    background: none !important;
-}
-.transparent-img [data-testid="stImage"] {
-    background-color: transparent !important;
-    background: none !important;
-}
-.transparent-img [data-testid="stImage"] > img {
-    background-color: transparent !important;
-    mix-blend-mode: multiply;
-    filter: contrast(1.05);
-}
-
-/* تلوين حقول الإدخال بالوردي */
 div[data-testid="stTextInput"] input {
     border: 1.5px solid #F48FB1 !important;
     border-radius: 10px !important;
@@ -75,22 +68,13 @@ div[data-testid="stTextInput"] input:focus {
     border-color: #E91E8C !important;
     box-shadow: 0 0 0 2px rgba(233,30,140,0.15) !important;
 }
-
-/* تلوين الـ Radio بالوردي */
 div[data-testid="stRadio"] label {
     color: #AD1457 !important;
     font-weight: bold;
 }
-div[data-testid="stRadio"] input[type="radio"]:checked + div {
-    background-color: #E91E8C !important;
-}
-
-/* تلوين الفاصل */
 hr {
     border-color: #F48FB1 !important;
 }
-
-/* label فوق حقول الإدخال */
 div[data-testid="stTextInput"] label,
 div[data-testid="stRadio"] > label {
     color: #C2185B !important;
@@ -101,7 +85,6 @@ div[data-testid="stRadio"] > label {
 
 st.markdown("<h1 class='main-title'>AI-Powered Mammogram Analysis for Early Breast Cancer Detection</h1>", unsafe_allow_html=True)
 st.write("---")
-
 st.markdown("<h3 class='sub-title'>Your health matters ❤️</h3>", unsafe_allow_html=True)
 
 col1, col2 = st.columns([1.2, 1])
@@ -113,12 +96,12 @@ with col1:
     medical_history = st.radio("Medical History", ["No", "Yes"], index=0)
 
 with col2:
-    st.markdown('<div class="transparent-img">', unsafe_allow_html=True)
     try:
-        st.image("my2.jpg", width=270)
+        # ✅ هنا يصير إزالة الخلفية فعلياً
+        clean_img = remove_white_background("my2.jpg", threshold=240)
+        st.image(clean_img, width=270)
     except Exception as e:
-        st.warning("Image 'my2.jpg' not found.")
-    st.markdown('</div>', unsafe_allow_html=True)
+        st.warning(f"تعذر تحميل الصورة: {e}")
 
     st.markdown("<div class='quote-box'>\"Like butterflies we flourish when we feel safe\"</div>", unsafe_allow_html=True)
 
